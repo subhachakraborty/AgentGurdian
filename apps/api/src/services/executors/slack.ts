@@ -18,7 +18,7 @@ export async function executeSlackAction(
     case 'slack.read_channels': {
       const res = await fetch(`${SLACK_API}/conversations.list?types=public_channel&limit=50`, { headers });
       if (!res.ok) throw new Error(`Slack API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!data.ok) throw new Error(`Slack error: ${data.error}`);
       return { success: true, data: data.channels, metadata: { channelCount: data.channels?.length ?? 0 } };
     }
@@ -26,7 +26,7 @@ export async function executeSlackAction(
     case 'slack.read_dms': {
       const res = await fetch(`${SLACK_API}/conversations.list?types=im&limit=50`, { headers });
       if (!res.ok) throw new Error(`Slack API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!data.ok) throw new Error(`Slack error: ${data.error}`);
       return { success: true, data: data.channels, metadata: { dmCount: data.channels?.length ?? 0 } };
     }
@@ -41,7 +41,7 @@ export async function executeSlackAction(
         }),
       });
       if (!res.ok) throw new Error(`Slack API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!data.ok) throw new Error(`Slack error: ${data.error}`);
       return { success: true, data, metadata: { channel: payload?.channel } };
     }
@@ -55,7 +55,7 @@ export async function executeSlackAction(
         }),
       });
       if (!res.ok) throw new Error(`Slack API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!data.ok) throw new Error(`Slack error: ${data.error}`);
       return { success: true, data, metadata: { dmTo: payload?.userId } };
     }
@@ -66,7 +66,7 @@ export async function executeSlackAction(
         body: JSON.stringify({ name: payload?.name as string }),
       });
       if (!res.ok) throw new Error(`Slack API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!data.ok) throw new Error(`Slack error: ${data.error}`);
       return { success: true, data: data.channel, metadata: { channelName: payload?.name } };
     }

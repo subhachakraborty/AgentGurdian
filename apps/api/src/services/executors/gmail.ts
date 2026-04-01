@@ -18,7 +18,7 @@ export async function executeGmailAction(
     case 'gmail.read_emails': {
       const res = await fetch(`${GMAIL_API_BASE}/messages?maxResults=${payload?.maxResults ?? 10}`, { headers });
       if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return {
         success: true,
         data: data.messages || [],
@@ -30,7 +30,7 @@ export async function executeGmailAction(
       const query = encodeURIComponent((payload?.query as string) || '');
       const res = await fetch(`${GMAIL_API_BASE}/messages?q=${query}&maxResults=20`, { headers });
       if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return {
         success: true,
         data: data.messages || [],
@@ -58,7 +58,7 @@ export async function executeGmailAction(
       });
 
       if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return {
         success: true,
         data,
@@ -80,7 +80,7 @@ export async function executeGmailAction(
       const messageId = payload?.messageId as string;
       const res = await fetch(`${GMAIL_API_BASE}/messages/${messageId}?format=full`, { headers });
       if (!res.ok) throw new Error(`Gmail API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return {
         success: true,
         data,

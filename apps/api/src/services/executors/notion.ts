@@ -26,7 +26,7 @@ export async function executeNotionAction(
         }),
       });
       if (!res.ok) throw new Error(`Notion API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return { success: true, data: data.results, metadata: { pageCount: data.results?.length ?? 0 } };
     }
 
@@ -37,7 +37,7 @@ export async function executeNotionAction(
         body: JSON.stringify({ properties: payload?.properties }),
       });
       if (!res.ok) throw new Error(`Notion API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return { success: true, data, metadata: { pageId } };
     }
 
@@ -51,7 +51,7 @@ export async function executeNotionAction(
         }),
       });
       if (!res.ok) throw new Error(`Notion API error: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       return { success: true, data, metadata: { newPageId: data.id } };
     }
 

@@ -10,6 +10,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Build shared package
+        run: npm run build -w packages/shared
       - run: npm run type-check
       - run: npm run lint
       - run: npm run test

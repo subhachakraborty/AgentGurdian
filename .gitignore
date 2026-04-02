@@ -40,3 +40,4 @@ redisdata/
 #Others
 *.md
 !README.md
+*.tsbuildinfo

@@ -5,7 +5,7 @@ import { requireAgentAuth, getActingUserId, getAgentId } from '../middleware/age
 import { requireStepUp } from '../middleware/stepUpAuth';
 import { agentActionLimiter } from '../middleware/rateLimit';
 import { orchestrateAction, executeApprovedAction } from '../services/orchestrator';
-import { approveNudgeAction, denyNudgeAction, getPendingAction } from '../services/nudgeService';
+import { approveNudgeAction, denyNudgeAction, getPendingAction, getUserPendingActions } from '../services/nudgeService';
 import { createAuditLog } from '../services/auditService';
 import { emitNudgeResolved, emitActivityUpdate } from '../services/notificationService';
 import { prisma } from '../lib/prisma';
@@ -89,6 +89,27 @@ router.post(
     }
   }
 );
+
+// GET /api/v1/agent/pending — List current pending nudge actions for dashboard user
+router.get('/pending', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const auth0UserId = (req as any).auth?.payload?.sub as string | undefined;
+    if (!auth0UserId) {
+      return res.status(401).json({ error: 'No user identity' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { auth0UserId } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const pendingActions = await getUserPendingActions(user.id);
+    res.json(pendingActions);
+  } catch (err: any) {
+    logger.error('Pending actions fetch error', { error: err.message });
+    res.status(500).json({ error: 'internal_error', message: err.message });
+  }
+});
 
 // GET /api/v1/agent/action/:jobId/status — Poll action status
 router.get('/action/:jobId/status', requireAuth, async (req: Request, res: Response) => {

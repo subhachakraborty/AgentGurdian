@@ -40,6 +40,7 @@ export interface ActionResponse {
   expiresAt?: string;
   challengeUrl?: string;
   error?: string;
+  data?: unknown;
 }
 
 // ─── Nudge Job States ───────────────────────────────────

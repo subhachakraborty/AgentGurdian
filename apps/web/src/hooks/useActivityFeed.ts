@@ -7,7 +7,15 @@ import { getSocket, connectSocket } from '../lib/socket';
 
 export function useActivityFeed() {
   const { user } = useAuth0();
-  const { activities, setActivities, addActivity, addPendingAction, removePendingAction, showStepUpModal } = useActivityStore();
+  const {
+    activities,
+    setActivities,
+    addActivity,
+    addPendingAction,
+    removePendingAction,
+    setPendingActions,
+    showStepUpModal,
+  } = useActivityStore();
 
   // Fetch initial activity log
   const { data, isLoading } = useQuery({
@@ -24,6 +32,18 @@ export function useActivityFeed() {
       setActivities(data.logs);
     }
   }, [data, setActivities]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    apiClient.get('/agent/pending')
+      .then((res) => {
+        setPendingActions(res.data ?? []);
+      })
+      .catch((err) => {
+        console.warn('Failed to load pending actions:', err?.response?.data ?? err.message);
+      });
+  }, [user, setPendingActions]);
 
   // Socket.io real-time events
   useEffect(() => {

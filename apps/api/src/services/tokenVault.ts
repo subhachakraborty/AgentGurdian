@@ -36,11 +36,13 @@ export async function getServiceToken(
       throw new ServiceNotConnectedError(service);
     }
 
+    const auth0UserId = await resolveAuth0UserId(userId);
+
     // In production, this calls auth0Management.users.getTokenVaultToken()
     // We attempt explicit calls and catch SDK incompatibilities gracefully
     try {
       const response = await (auth0Management as any).tokenVault.getToken({
-        userId,
+        userId: auth0UserId,
         connection,
       });
       
@@ -52,7 +54,7 @@ export async function getServiceToken(
     } catch (err: any) {
       // With Auth0 Node SDK v4, IDP access tokens are retrieved from the user's identities array
       if (err instanceof TypeError || (err.message && err.message.includes('not a function')) || err.message?.includes('tokenVault is undefined')) {
-        const userResp = await auth0Management.users.get({ id: userId });
+        const userResp = await auth0Management.users.get({ id: auth0UserId });
         const user = userResp.data;
         
         const identity = user.identities?.find(i => i.provider === connection || i.connection === connection);
@@ -89,6 +91,23 @@ export async function getServiceToken(
     }
     throw err;
   }
+}
+
+async function resolveAuth0UserId(userId: string): Promise<string> {
+  if (userId.includes('|')) {
+    return userId;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { auth0UserId: true },
+  });
+
+  if (!user?.auth0UserId) {
+    throw new Error(`User not found for internal ID ${userId}`);
+  }
+
+  return user.auth0UserId;
 }
 
 async function markConnectionRevoked(userId: string, service: string): Promise<void> {

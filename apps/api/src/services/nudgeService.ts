@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import { nudgeQueue } from '../lib/queue';
 import { logger } from '../lib/logger';
 import { NUDGE_TIMEOUT_MS } from '@agent-guardian/shared';
+import { redis } from '../lib/redis';
 import crypto from 'crypto';
 
 export interface CreateNudgeParams {
@@ -37,14 +38,13 @@ export async function createNudgeAction(params: CreateNudgeParams) {
   });
 
   // Store payload in Redis with 70s TTL (60s veto window + buffer)
+  // Await this write so an approval cannot race ahead of payload persistence.
   if (params.payload && Object.keys(params.payload).length > 0) {
-    import('../lib/redis').then(({ redis }) => {
-      redis.setex(
-        `nudge:payload:${pendingAction.id}`,
-        70,
-        JSON.stringify(params.payload)
-      ).catch((err: any) => logger.error('Failed to cache nudge payload in Redis', { error: err.message }));
-    });
+    await redis.setex(
+      `nudge:payload:${pendingAction.id}`,
+      70,
+      JSON.stringify(params.payload)
+    );
   }
 
   // Create BullMQ job with delayed processing (waits for approval or expiry)

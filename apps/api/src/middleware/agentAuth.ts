@@ -1,5 +1,7 @@
 // src/middleware/agentAuth.ts — Agent Identity (Section 16.1.4)
 import { Request, Response, NextFunction } from 'express';
+import { auth0Management } from '../config/auth0';
+import { prisma } from '../lib/prisma';
 
 const USER_ID_CLAIM  = 'https://agentguardian.com/userId';
 const AGENT_ID_CLAIM = 'https://agentguardian.com/agentId';
@@ -28,15 +30,27 @@ export function requireAgentAuth(
 
   if (!userId) {
     if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-      // Demo fallback: if the Auth0 Action isn't set up to inject claims, 
-      // just bind the agent to the first user in the database so the demo works.
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-      return prisma.user.findFirst().then((firstUser: any) => {
-        if (!firstUser) {
-          return res.status(403).json({ error: 'forbidden', message: 'No users in database. Login to the dashboard first.' });
+      const requestedAuth0UserId = req.header('x-agent-auth0-user-id');
+      const requestedEmail = req.header('x-agent-user-email');
+
+      if (!requestedAuth0UserId && !requestedEmail) {
+        return res.status(403).json({
+          error: 'forbidden',
+          message: 'Agent token is missing user binding. Set x-agent-auth0-user-id or x-agent-user-email in development, or configure the Auth0 M2M Action.',
+        });
+      }
+
+      return resolveDevelopmentAgentUser(requestedAuth0UserId, requestedEmail).then((matchedUser: any) => {
+        if (!matchedUser) {
+          return res.status(403).json({
+            error: 'forbidden',
+            message: requestedEmail
+              ? `No user found for email ${requestedEmail}. Try AGENT_ACTING_AUTH0_USER_ID if your DB profile was created without an email claim.`
+              : `No user found for ID ${requestedAuth0UserId}.`,
+          });
         }
-        (req as any).actingUserId = firstUser.auth0UserId;
+
+        (req as any).actingUserId = matchedUser.auth0UserId;
         (req as any).agentId = agentId;
         next();
       }).catch((err: any) => {
@@ -63,4 +77,54 @@ export function getActingUserId(req: Request): string {
 
 export function getAgentId(req: Request): string | undefined {
   return (req as any).agentId;
+}
+
+async function resolveDevelopmentAgentUser(
+  requestedAuth0UserId?: string,
+  requestedEmail?: string
+) {
+  if (requestedAuth0UserId) {
+    return prisma.user.findFirst({
+      where: {
+        OR: [
+          { auth0UserId: requestedAuth0UserId },
+          { id: requestedAuth0UserId },
+        ],
+      },
+    });
+  }
+
+  if (!requestedEmail) {
+    return null;
+  }
+
+  const directEmailMatch = await prisma.user.findFirst({
+    where: {
+      email: {
+        equals: requestedEmail,
+        mode: 'insensitive',
+      },
+    },
+  });
+
+  if (directEmailMatch) {
+    return directEmailMatch;
+  }
+
+  const auth0Users = await auth0Management.usersByEmail.getByEmail({ email: requestedEmail });
+  const auth0UserIds = (auth0Users.data || [])
+    .map((user: any) => user.user_id)
+    .filter(Boolean);
+
+  if (auth0UserIds.length === 0) {
+    return null;
+  }
+
+  return prisma.user.findFirst({
+    where: {
+      auth0UserId: {
+        in: auth0UserIds,
+      },
+    },
+  });
 }

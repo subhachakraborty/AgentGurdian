@@ -28,6 +28,7 @@ export interface OrchestrateResult {
   expiresAt?: string;
   challengeUrl?: string;
   error?: string;
+  data?: unknown;
 }
 
 export async function orchestrateAction(
@@ -105,9 +106,10 @@ async function handleAutoTier(
       tier: 'AUTO',
       status: 'EXECUTED',
       auditLogId: auditLog.id,
+      data: result?.data,
     };
   } catch (err: any) {
-    if (err instanceof ServiceNotConnectedError) {
+    if (err instanceof ServiceNotConnectedError || err instanceof TokenExpiredError) {
       const auditLog = await createAuditLog({
         userId, agentId,
         service: service.toUpperCase(),

@@ -1,6 +1,8 @@
 // agent/src/guardian/waitForApproval.ts
 // Polling protocol with exponential backoff (Section 16.6)
 
+const GUARDIAN_API = process.env.GUARDIAN_API_URL || 'http://localhost:3001';
+
 type ApprovalStatus =
   | 'PENDING_APPROVAL'
   | 'APPROVED'
@@ -27,7 +29,7 @@ export async function waitForApproval(
     await sleep(backoff);
 
     const resp = await fetch(
-      `${process.env.GUARDIAN_API_URL}/api/v1/agent/action/${jobId}/status`,
+      `${GUARDIAN_API}/api/v1/agent/action/${jobId}/status`,
       { headers: { Authorization: `Bearer ${agentToken}` } }
     );
 

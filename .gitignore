@@ -41,3 +41,4 @@ redisdata/
 *.md
 !README.md
 *.tsbuildinfo
+.codex

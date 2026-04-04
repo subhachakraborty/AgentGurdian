@@ -50,17 +50,20 @@ export async function getServiceToken(
       
       return response.access_token;
     } catch (err: any) {
-      // SDK might not have tokenVault mapped, fallback to manual users token extraction
+      // With Auth0 Node SDK v4, IDP access tokens are retrieved from the user's identities array
       if (err instanceof TypeError || (err.message && err.message.includes('not a function')) || err.message?.includes('tokenVault is undefined')) {
-        const tokenResp = await (auth0Management as any).users.getToken({
-          id: userId,
-          connection,
-        });
-
-        if (!tokenResp?.access_token) {
-          throw new Error('Token Vault returned empty token on fallback');
+        const userResp = await auth0Management.users.get({ id: userId });
+        const user = userResp.data;
+        
+        const identity = user.identities?.find(i => i.provider === connection || i.connection === connection);
+        
+        if (!identity?.access_token) {
+          logger.warn(`No access_token found in identity for ${connection}. Token may be expired or Auth0 Management API lacks read:user_idp_tokens scope.`);
+          throw new Error('Token Vault returned an empty or missing access token on fallback');
         }
-        return tokenResp.access_token;
+        
+        // Also ensure Auth0 passes down the token (requires Management API setup)
+        return identity.access_token;
       }
       
       throw err; // Valid Auth0 Error!

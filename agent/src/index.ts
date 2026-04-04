@@ -5,7 +5,7 @@ import { getAgentToken } from './auth/getAgentToken';
 import { waitForApproval } from './guardian/waitForApproval';
 
 const GUARDIAN_API = process.env.GUARDIAN_API_URL || 'http://localhost:3001';
-const DEMO_GITHUB_OWNER = process.env.DEMO_GITHUB_OWNER || 'subhachakraborty';
+const DEMO_GITHUB_OWNER = process.env.DEMO_GITHUB_OWNER || 'Vikk-17';
 const DEMO_GITHUB_REPO = process.env.DEMO_GITHUB_REPO || 'Test';
 const DEMO_GITHUB_BRANCH = process.env.DEMO_GITHUB_BRANCH || 'test-branch';
 
@@ -171,7 +171,7 @@ async function runDemoTask() {
 
   console.log('   → Complete MFA from the dashboard modal, or open this URL manually:');
   console.log(`   → ${deleteBranch.challengeUrl}`);
-  const approval = await waitForStepUpResolution(deleteBranch.jobId, token, 5 * 60 * 1000);
+  const approval = await waitForStepUpResolution(token, deleteBranch.jobId, 5 * 60 * 1000);
   console.log(`   → Step-up result: ${approval.status}`);
 
   if (approval.status !== 'APPROVED' && approval.status !== 'STEP_UP_VERIFIED') {

@@ -8,6 +8,7 @@ import { executeServiceAction } from './executors';
 import { ActionTier } from '@agent-guardian/shared';
 import { logger } from '../lib/logger';
 import { prisma } from '../lib/prisma';
+import { redis } from '../lib/redis';
 import crypto from 'crypto';
 import { env } from '../config/env';
 
@@ -193,6 +194,16 @@ async function handleStepUpTier(
     },
   });
 
+  // Persist payload to Redis so executeApprovedAction can retrieve it after MFA.
+  // Use the same key scheme and a TTL that covers the 5-minute MFA window + buffer.
+  if (payload && Object.keys(payload).length > 0) {
+    await redis.setex(
+      `nudge:payload:${pendingAction.id}`,
+      360, // 6 minutes — covers the 5-min MFA window with a safety buffer
+      JSON.stringify(payload)
+    );
+  }
+
   // Generate challenge URL
   const challengeUrl = `https://${env.AUTH0_DOMAIN}/authorize?` +
     `client_id=${encodeURIComponent(env.AUTH0_CLIENT_ID)}&` +
@@ -235,7 +246,6 @@ export async function executeApprovedAction(
     const token = await getServiceToken(pending.userId, service);
 
     // Retrieve payload from Redis
-    const { redis } = await import('../lib/redis');
     const rawPayload = await redis.get(`nudge:payload:${pendingActionId}`);
     const reconstructedPayload = rawPayload ? JSON.parse(rawPayload) : {};
 

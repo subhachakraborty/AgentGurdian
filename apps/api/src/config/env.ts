@@ -28,6 +28,9 @@ const envSchema = z.object({
   // Frontend
   FRONTEND_URL: z.string().default('http://localhost:5173'),
 
+  // Backend (self-reference for OAuth redirect_uri)
+  API_BASE_URL: z.string().default('http://localhost:3001'),
+
   // Web Push
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),

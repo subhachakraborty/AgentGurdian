@@ -58,11 +58,14 @@ router.get('/:service/authorize', requireAuth, async (req: Request, res: Respons
     }
 
     // Generate Auth0 authorization URL for Token Vault connection
+    // redirect_uri MUST point to the BACKEND callback handler — NOT the frontend.
+    // The backend processes state, upserts the DB, then redirects to the frontend.
+    const callbackUrl = `${env.API_BASE_URL}/api/v1/connections/callback`;
     const authUrl = `https://${env.AUTH0_DOMAIN}/authorize?` +
       `response_type=code&` +
       `client_id=${env.AUTH0_CLIENT_ID}&` +
       `connection=${connectionName}&` +
-      `redirect_uri=${encodeURIComponent(env.FRONTEND_URL + '/connections/callback')}&` +
+      `redirect_uri=${encodeURIComponent(callbackUrl)}&` +
       `scope=openid profile email&` +
       `state=${encodeURIComponent(JSON.stringify({ service: service.toUpperCase(), userId: auth0UserId }))}`;
 

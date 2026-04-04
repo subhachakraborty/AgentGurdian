@@ -106,11 +106,11 @@ export async function getAuditStats(userId: string) {
       _count: true,
     }),
     prisma.$queryRaw`
-      SELECT DATE(executed_at) as date, COUNT(*)::int as count
+      SELECT DATE("executedAt") as date, COUNT(*)::int as count
       FROM "AuditLog"
-      WHERE user_id = ${userId}
-        AND executed_at >= NOW() - INTERVAL '7 days'
-      GROUP BY DATE(executed_at)
+      WHERE "userId" = ${userId}
+        AND "executedAt" >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE("executedAt")
       ORDER BY date ASC
     ` as Promise<{ date: Date; count: number }[]>,
   ]);

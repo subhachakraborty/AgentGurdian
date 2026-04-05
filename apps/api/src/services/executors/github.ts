@@ -15,10 +15,27 @@ export async function executeGithubAction(
     'Content-Type': 'application/json',
   };
 
-  const owner = (payload?.owner as string) || '';
+  let owner = (payload?.owner as string) || '';
   const repo = (payload?.repo as string) || '';
 
+  // AUTO-RESOLVE OWNER: If the LLM doesn't know the owner, use the github token to figure out exactly who is logged in!
+  if (!owner) {
+    const userRes = await fetch(`${GITHUB_API}/user`, { headers });
+    if (!userRes.ok) throw new Error(`Could not auto-resolve GitHub user: ${userRes.status}`);
+    const userData: any = await userRes.json();
+    owner = userData.login;
+    logger.info(`Auto-resolved GitHub owner dynamically to: ${owner}`);
+  }
+
   switch (actionType) {
+    case 'github.read_repositories': {
+      // Fetches repos for the authenticated user (bound to the acting userId token)
+      const res = await fetch(`${GITHUB_API}/user/repos?per_page=100`, { headers });
+      if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+      const data: any = await res.json();
+      return { success: true, data, metadata: { repoCount: data.length } };
+    }
+
     case 'github.read_issues': {
       const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/issues?state=open&per_page=20`, { headers });
       if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);

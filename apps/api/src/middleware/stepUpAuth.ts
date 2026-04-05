@@ -12,8 +12,6 @@ export function requireStepUp(req: Request, res: Response, next: NextFunction) {
   const rawIdToken = req.headers['x-id-token'] as string | undefined;
   const decodedId = rawIdToken ? (jwt.decode(rawIdToken) as Record<string, unknown>) : null;
 
-  require('fs').writeFileSync('/home/etblack/byzantine/AgentGuardian/debug-token.json', JSON.stringify({ decoded, decodedId }, null, 2));
-
   let acr = decoded?.acr as string | undefined;
   let amr = decoded?.amr as string[] | undefined;
 

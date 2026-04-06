@@ -270,6 +270,58 @@ Guardian API → PostgreSQL + Redis + Socket.IO (state, audit, approvals)
 | Wrong GitHub repo | Name the repo explicitly or use `owner/repo`. |
 | Watch mode flickers | Prefer `npm run dev -w agent`; use `dev:watch` only when editing agent code. |
 
+## Integrating with AI agent frameworks
+
+Agent Guardian can serve as a **middleware trust layer** for AI agents built with popular frameworks. The architecture allows any agent that can make HTTP requests to route actions through Guardian for classification, approval, and audited execution.
+
+### Compatible frameworks
+
+Agent Guardian's REST API can integrate with:
+
+- **LangGraph** / **LangChain** - wrap Guardian API calls in custom tools
+- **CrewAI** - implement Guardian-backed tools in crew agents
+- **AutoGPT** - replace direct API calls with Guardian endpoints
+- **n8n** - use HTTP Request nodes to call Guardian API
+- **Custom agents** - integrate via REST API
+
+### Integration approach
+
+Instead of calling provider APIs directly, agents route actions through Guardian:
+
+```typescript
+// Direct call (without Guardian):
+await octokit.issues.create({ owner, repo, title, body });
+
+// Via Guardian (with approval flow):
+const response = await fetch(`${GUARDIAN_API_URL}/api/v1/agent/action`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${agentToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    service: 'github',
+    actionType: 'github.create_issue',
+    payload: { owner, repo, title, body }
+  })
+});
+```
+
+### Authentication
+
+1. Create an Auth0 **Machine-to-Machine** application with `agent:act` scope
+2. Fetch a token using client credentials grant
+3. Use the `access_token` in the `Authorization: Bearer` header
+4. Bind to a user via Auth0 M2M Action (see [How the agent resolves the acting user](#how-the-agent-resolves-the-acting-user))
+
+### Handling approval flows
+
+- **AUTO** actions return results immediately
+- **NUDGE** actions return `{ status: 'pending', jobId: '...' }` — poll `GET /api/v1/agent/action/:jobId/status` or use Socket.IO
+- **STEP_UP** actions return `{ status: 'pending', challengeUrl: '...' }` — user must complete MFA in the dashboard
+
+For long-running workflows, implement polling or Socket.IO listeners in your framework's async execution layer.
+
 ## License
 
 MIT

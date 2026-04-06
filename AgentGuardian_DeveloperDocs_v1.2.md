@@ -554,7 +554,127 @@ sudo systemctl restart your-api-service   # or equivalent
 
 ---
 
-## 21. Summary
+## 21. Integrating with AI agent frameworks
+
+Agent Guardian's API design allows it to serve as a **middleware trust layer** for AI agents built with various frameworks. Any agent capable of making HTTP requests can route actions through Guardian for tier classification, approval orchestration, and audited execution.
+
+### 21.1 Integration architecture
+
+```text
+AI Agent Framework (LangGraph, CrewAI, AutoGPT, n8n, etc.)
+    |
+    v
+Guardian API (/api/v1/agent/action)
+    |
+    +---> Tier classification (AUTO/NUDGE/STEP_UP)
+    +---> Approval flow (if needed)
+    +---> Provider execution (GitHub, Gmail, Slack, Notion)
+    +---> Audit logging
+```
+
+### 21.2 Core integration pattern
+
+The key is replacing direct provider SDK calls with Guardian API requests:
+
+**Without Guardian**
+```typescript
+await githubClient.issues.create({ owner, repo, title, body });
+```
+
+**With Guardian**
+```typescript
+const response = await fetch(`${GUARDIAN_API_URL}/api/v1/agent/action`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${agentToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    service: 'github',
+    actionType: 'github.create_issue',
+    payload: { owner, repo, title, body }
+  })
+});
+```
+
+### 21.3 Compatible frameworks
+
+- **LangChain / LangGraph** - implement custom tools that call Guardian API
+- **CrewAI** - wrap Guardian API calls in crew agent tools
+- **AutoGPT** - route actions through Guardian endpoints
+- **n8n** - use HTTP Request nodes with Guardian API
+- **Custom TypeScript/Python agents** - direct HTTP integration
+
+### 21.4 Authentication setup
+
+**1. Create Auth0 M2M application**
+
+- Auth0 Dashboard → Applications → Create Application → Machine to Machine
+- Authorize for your Guardian API
+- Grant `agent:act` scope
+
+**2. Fetch access token**
+
+```bash
+curl -X POST https://YOUR_TENANT.auth0.com/oauth/token \
+  -H 'content-type: application/json' \
+  -d '{
+    "client_id": "YOUR_M2M_CLIENT_ID",
+    "client_secret": "YOUR_M2M_CLIENT_SECRET",
+    "audience": "YOUR_API_IDENTIFIER",
+    "grant_type": "client_credentials"
+  }'
+```
+
+**3. Bind agent to user (production)**
+
+Create an Auth0 Action (Machine to Machine flow):
+
+```javascript
+exports.onExecuteCredentialsExchange = async (event, api) => {
+  if (event.client.client_id !== 'YOUR_AGENT_M2M_CLIENT_ID') return;
+  
+  const userId = 'auth0|123456'; // or from client metadata
+  api.accessToken.setCustomClaim('https://agentguardian.com/userId', userId);
+};
+```
+
+See [§18](#18-production-agent-auth0-m2m-action) for full details.
+
+### 21.5 Handling approval flows
+
+| Tier | Response | Framework action |
+|------|----------|------------------|
+| `AUTO` | `{ status: 'executed', result: {...} }` | Return result immediately |
+| `NUDGE` | `{ status: 'pending', jobId: '...' }` | Poll `GET /api/v1/agent/action/:jobId/status` or use Socket.IO |
+| `STEP_UP` | `{ status: 'pending', challengeUrl: '...' }` | Notify user to complete MFA in dashboard |
+
+For `NUDGE` and `STEP_UP` actions, implement polling (check status every 1-2 seconds) or Socket.IO listeners (`nudge:resolved`, `nudge:expired`, `stepup:completed`) in your framework's async execution layer.
+
+### 21.6 Available actions
+
+All actions from [§11](#11-supported-service-actions) can be routed through Guardian:
+
+- **GitHub:** 13 actions (read repos, create issues, merge PRs, etc.)
+- **Gmail:** 8 actions (read, send, reply, delete emails)
+- **Slack:** 6 actions (read channels, post messages, create channels)
+- **Notion:** 4 actions (read, create, update, delete pages)
+
+Default tiers: [packages/shared/src/constants/defaults.ts](packages/shared/src/constants/defaults.ts)
+
+### 21.7 Benefits
+
+- **Unified approval UX:** users approve actions in one dashboard regardless of agent framework
+- **Audit trail:** all actions logged with tier, outcome, timestamp, payload hash
+- **Fail-safe defaults:** unknown actions default to `STEP_UP`
+- **Token management:** OAuth tokens retrieved on-demand, not stored in agent code
+- **Framework-agnostic:** works with any system that can make HTTP requests
+
+
+
+---
+
+## 22. Summary
 
 The implementation provides:
 

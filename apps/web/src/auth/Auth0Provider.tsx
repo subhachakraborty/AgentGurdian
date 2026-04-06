@@ -49,7 +49,7 @@ export function Auth0ProviderWithNavigate({ children }: Props) {
         scope: 'openid profile email',
       }}
       onRedirectCallback={onRedirectCallback}
-      cacheLocation="memory"
+      cacheLocation="localstorage"
       useRefreshTokens={true}
     >
       {children}

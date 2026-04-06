@@ -1,0 +1,20 @@
+[Unit]
+Description=Agent Guardian API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/agent-guardian
+EnvironmentFile=/etc/agent-guardian/api.env
+ExecStart=/usr/bin/npm run start -w apps/api
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

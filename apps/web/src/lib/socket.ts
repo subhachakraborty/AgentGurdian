@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+const browserOrigin = typeof window !== 'undefined' ? window.location.origin : undefined;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || browserOrigin || 'http://localhost:3001';
 
 let socket: Socket | null = null;
 

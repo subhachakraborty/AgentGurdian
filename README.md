@@ -31,6 +31,7 @@ OAuth tokens are fetched on demand; raw provider tokens are **not** stored in th
 
 - **[README.md](README.md)** (this file): setup, OAuth connections, CLI, acting-user behavior, troubleshooting.
 - **[AgentGuardian_DeveloperDocs_v1.2.md](AgentGuardian_DeveloperDocs_v1.2.md)**: architecture, API reference, Auth0 Token Vault and M2M Action details, production deployment notes, implementation caveats.
+- **[DEPLOY_EC2_DEMO.md](DEPLOY_EC2_DEMO.md)**: concrete single-instance AWS EC2 deployment flow for the web app, API, Dockerized Postgres/Redis, Nginx, and systemd.
 
 ## Repo layout
 

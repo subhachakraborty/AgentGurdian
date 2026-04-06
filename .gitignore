@@ -13,7 +13,6 @@ build/
 
 # Prisma
 apps/api/prisma/*.db
-apps/api/prisma/migrations/
 
 # IDE
 .vscode/

@@ -88,7 +88,14 @@ router.get('/callback', async (req: Request, res: Response) => {
       return res.redirect(`${env.FRONTEND_URL}/connections?error=missing_state`);
     }
 
-    const stateData = JSON.parse(decodeURIComponent(state as string));
+    let stateData;
+    try {
+      stateData = JSON.parse(decodeURIComponent(state as string));
+    } catch (err: any) {
+      logger.error('OAuth callback: invalid state JSON', { state, error: err.message });
+      return res.redirect(`${env.FRONTEND_URL}/connections?error=invalid_state`);
+    }
+    
     const { service, userId: auth0UserId } = stateData;
 
     // Find user

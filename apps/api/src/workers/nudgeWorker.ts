@@ -44,6 +44,9 @@ export function startNudgeWorker() {
           payloadHash: pending.payloadHash,
         });
 
+        // Clean up Redis payload to prevent memory leak
+        await redis.del(`nudge:payload:${pendingActionId}`);
+
         // Notify via Socket.io
         emitNudgeExpired(userId, pendingActionId);
 

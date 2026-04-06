@@ -161,6 +161,9 @@ export async function denyNudgeAction(
     await bullJob.remove();
   }
 
+  // Clean up Redis payload to prevent memory leak
+  await redis.del(`nudge:payload:${jobId}`);
+
   logger.info('Nudge action denied', { jobId, resolvedByUserId });
   return updated;
 }
@@ -173,6 +176,9 @@ export async function expireNudgeAction(jobId: string) {
       resolvedAt: new Date(),
     },
   });
+
+  // Clean up Redis payload to prevent memory leak
+  await redis.del(`nudge:payload:${jobId}`);
 
   logger.info('Nudge action expired', { jobId });
   return updated;

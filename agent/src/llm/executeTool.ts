@@ -34,7 +34,7 @@ export async function executeGuardianAction(
 
   if (!res.ok) {
     let errText = await res.text();
-    try { errText = JSON.parse(errText).message || errText; } catch {}
+    try { errText = JSON.parse(errText).message || errText; } catch { /* ignore parse errors */ }
     return `Error from Agent Guardian API: ${res.status} - ${errText}`;
   }
 
